@@ -1,10 +1,9 @@
 package se.lexicon.erik.g36jpaworkshop.model;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 @Entity
 public class Book {
@@ -14,6 +13,17 @@ public class Book {
     private String isbn;
     private String title;
     private int maxLoanDays;
+
+    @ManyToMany(
+            cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH},
+            fetch = FetchType.LAZY
+    )
+    @JoinTable(
+            name = "books_authors",
+            joinColumns = @JoinColumn(name = "book_id"),
+            inverseJoinColumns = @JoinColumn(name = "author_id")
+    )
+    private Set<Author> authors;
 
     public Book(int bookId, String isbn, String title, int maxLoanDays) {
         this.bookId = bookId;
@@ -51,6 +61,27 @@ public class Book {
 
     public void setMaxLoanDays(int maxLoanDays) {
         this.maxLoanDays = maxLoanDays;
+    }
+
+    public Set<Author> getAuthors() {
+        if(authors == null) authors = new HashSet<>();
+        return authors;
+    }
+
+    public void setAuthors(Set<Author> authors) {
+        if(authors == null) authors = new HashSet<>();
+        authors.remove(null);
+        if(authors.isEmpty()){
+            if(this.authors != null){
+                for(Author author : this.authors){
+                    author.getWrittenBooks().remove(this);
+                }
+            }
+        }else {
+            for(Author author : authors){
+                author.getWrittenBooks().add(this);
+            }
+        }
     }
 
     @Override
